@@ -1,16 +1,16 @@
 import java.util.Random;
 
+/**
+ * Random strategy: computer picks Rock, Paper, or Scissors at random.
+ */
 public class RandomStrategy implements Strategy {
-    private final Random rand = new Random();
+    private final Random random = new Random();
 
     @Override
     public String getMove(String playerMove) {
-        int n = rand.nextInt(3);
-        switch (n) {
-            case 0: return "R";
-            case 1: return "P";
-            case 2: return "S";
-            default: return "R";
-        }
+        int choice = random.nextInt(3);
+        if (choice == 0) return "R";
+        if (choice == 1) return "P";
+        return "S";
     }
 }

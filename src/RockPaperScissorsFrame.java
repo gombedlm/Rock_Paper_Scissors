@@ -1,23 +1,31 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
-import java.util.*;
+import java.awt.event.ActionListener;
+import java.util.Random;
 
+/**
+ * Main GUI for the Rock Paper Scissors game.
+ */
 public class RockPaperScissorsFrame extends JFrame {
+
     private JTextArea resultsArea;
     private JTextField playerWinsField, computerWinsField, tiesField;
-    private int playerWins = 0, computerWins = 0, ties = 0;
 
-    // Track player moves
-    private int rockCount = 0, paperCount = 0, scissorsCount = 0;
+    private int playerWins = 0;
+    private int computerWins = 0;
+    private int ties = 0;
+
+    private int rockCount = 0;
+    private int paperCount = 0;
+    private int scissorsCount = 0;
     private String lastPlayerMove = null;
 
     // Strategies
-    private Strategy cheat = new Cheat();
-    private Strategy random = new RandomStrategy();
-    private Strategy leastUsed = new LeastUsed();
-    private Strategy mostUsed = new MostUsed();
-    private Strategy lastUsed = new LastUsed();
+    private final Strategy cheat = new Cheat();
+    private final Strategy random = new RandomStrategy();
+    private final Strategy leastUsed = new LeastUsed();
+    private final Strategy mostUsed = new MostUsed();
+    private final Strategy lastUsed = new LastUsed();
 
     public RockPaperScissorsFrame() {
         setTitle("Rock Paper Scissors Game");
@@ -29,16 +37,15 @@ public class RockPaperScissorsFrame extends JFrame {
         JPanel buttonPanel = new JPanel();
         buttonPanel.setBorder(BorderFactory.createTitledBorder("Choose Your Move"));
 
-        JButton rockBtn = new JButton(new ImageIcon("rock.png"));
-        JButton paperBtn = new JButton(new ImageIcon("paper.png"));
-        JButton scissorsBtn = new JButton(new ImageIcon("scissors.png"));
-        JButton quitBtn = new JButton("Quit");
+        JButton rockButton = new JButton(loadIcon("/Rock.png", "Rock"));
+        JButton paperButton = new JButton(loadIcon("/Paper.png", "Paper"));
+        JButton scissorsButton = new JButton(loadIcon("/Scissors.png", "Scissors"));
+        JButton quitButton = new JButton(loadIcon("/Quit.png", "Quit"));
 
-        buttonPanel.add(rockBtn);
-        buttonPanel.add(paperBtn);
-        buttonPanel.add(scissorsBtn);
-        buttonPanel.add(quitBtn);
-
+        buttonPanel.add(rockButton);
+        buttonPanel.add(paperButton);
+        buttonPanel.add(scissorsButton);
+        buttonPanel.add(quitButton);
         add(buttonPanel, BorderLayout.NORTH);
 
         // --- Stats Panel ---
@@ -62,37 +69,54 @@ public class RockPaperScissorsFrame extends JFrame {
 
         add(statsPanel, BorderLayout.SOUTH);
 
-        // --- Results Panel ---
+        // --- Results Area ---
         resultsArea = new JTextArea(10, 40);
         resultsArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(resultsArea);
         add(scrollPane, BorderLayout.CENTER);
 
-        // Action listeners
+        // --- Action Listeners ---
         ActionListener listener = e -> {
             String playerMove = "";
-            if (e.getSource() == rockBtn) playerMove = "R";
-            else if (e.getSource() == paperBtn) playerMove = "P";
-            else if (e.getSource() == scissorsBtn) playerMove = "S";
+            if (e.getSource() == rockButton) playerMove = "R";
+            else if (e.getSource() == paperButton) playerMove = "P";
+            else if (e.getSource() == scissorsButton) playerMove = "S";
 
-            if (!playerMove.isEmpty()) playRound(playerMove);
+            if (!playerMove.isEmpty()) {
+                playRound(playerMove);
+            }
         };
 
-        rockBtn.addActionListener(listener);
-        paperBtn.addActionListener(listener);
-        scissorsBtn.addActionListener(listener);
+        rockButton.addActionListener(listener);
+        paperButton.addActionListener(listener);
+        scissorsButton.addActionListener(listener);
+        quitButton.addActionListener(e -> System.exit(0));
+    }
 
-        quitBtn.addActionListener(e -> System.exit(0));
+    /**
+     * Loads an image from resources and scales it to 64x64 px.
+     * If missing, falls back to text button.
+     */
+    private ImageIcon loadIcon(String path, String fallbackText) {
+        java.net.URL imgURL = getClass().getResource(path);
+        if (imgURL != null) {
+            ImageIcon originalIcon = new ImageIcon(imgURL);
+            Image scaledImg = originalIcon.getImage()
+                    .getScaledInstance(64, 64, Image.SCALE_SMOOTH);
+            return new ImageIcon(scaledImg);
+        } else {
+            System.err.println("Could not load: " + path + " → Using text: " + fallbackText);
+            return null;
+        }
     }
 
     private void playRound(String playerMove) {
         updatePlayerMoveCounts(playerMove);
 
-        // Pick strategy based on probability
-        int roll = new Random().nextInt(100) + 1;
         Strategy strategy;
         String strategyName;
 
+        int roll = new Random().nextInt(100) + 1;
         if (roll <= 10) {
             strategy = cheat;
             strategyName = "Cheat";
@@ -111,11 +135,12 @@ public class RockPaperScissorsFrame extends JFrame {
         }
 
         String computerMove = strategy.getMove(playerMove);
-        String result = determineWinner(playerMove, computerMove);
+        String outcome = determineWinner(playerMove, computerMove);
 
-        resultsArea.append(result + " (Computer: " + strategyName + ")\n");
-        updateStats();
+        resultsArea.append(outcome + " (Computer: " + strategyName + ")\n");
+
         lastPlayerMove = playerMove;
+        updateStats();
     }
 
     private void updatePlayerMoveCounts(String move) {
@@ -129,17 +154,17 @@ public class RockPaperScissorsFrame extends JFrame {
     private String determineWinner(String player, String computer) {
         if (player.equals(computer)) {
             ties++;
-            return moveToString(player) + " vs " + moveToString(computer) + " (Tie)";
+            return toWord(player) + " vs " + toWord(computer) + " (Tie)";
         }
 
         if ((player.equals("R") && computer.equals("S")) ||
                 (player.equals("P") && computer.equals("R")) ||
                 (player.equals("S") && computer.equals("P"))) {
             playerWins++;
-            return moveToString(player) + " beats " + moveToString(computer) + " (Player Wins)";
+            return toWord(player) + " beats " + toWord(computer) + " (Player Wins)";
         } else {
             computerWins++;
-            return moveToString(computer) + " beats " + moveToString(player) + " (Computer Wins)";
+            return toWord(computer) + " beats " + toWord(player) + " (Computer Wins)";
         }
     }
 
@@ -149,7 +174,7 @@ public class RockPaperScissorsFrame extends JFrame {
         tiesField.setText(String.valueOf(ties));
     }
 
-    private String moveToString(String move) {
+    private String toWord(String move) {
         switch (move) {
             case "R": return "Rock";
             case "P": return "Paper";
@@ -158,29 +183,31 @@ public class RockPaperScissorsFrame extends JFrame {
         }
     }
 
-    // ----- Inner Classes -----
+    // --- Inner Classes for Strategies ---
     private class LeastUsed implements Strategy {
         @Override
         public String getMove(String playerMove) {
-            if (rockCount <= paperCount && rockCount <= scissorsCount) return "P"; // Beat Rock
-            if (paperCount <= rockCount && paperCount <= scissorsCount) return "S"; // Beat Paper
-            return "R"; // Beat Scissors
+            if (rockCount <= paperCount && rockCount <= scissorsCount) return "P"; // beat Rock
+            if (paperCount <= rockCount && paperCount <= scissorsCount) return "S"; // beat Paper
+            return "R"; // beat Scissors
         }
     }
 
     private class MostUsed implements Strategy {
         @Override
         public String getMove(String playerMove) {
-            if (rockCount >= paperCount && rockCount >= scissorsCount) return "P"; // Beat Rock
-            if (paperCount >= rockCount && paperCount >= scissorsCount) return "S"; // Beat Paper
-            return "R"; // Beat Scissors
+            if (rockCount >= paperCount && rockCount >= scissorsCount) return "P"; // beat Rock
+            if (paperCount >= rockCount && paperCount >= scissorsCount) return "S"; // beat Paper
+            return "R"; // beat Scissors
         }
     }
 
     private class LastUsed implements Strategy {
         @Override
         public String getMove(String playerMove) {
-            if (lastPlayerMove == null) return random.getMove(playerMove);
+            if (lastPlayerMove == null) {
+                return random.getMove(playerMove);
+            }
             switch (lastPlayerMove) {
                 case "R": return "P";
                 case "P": return "S";
